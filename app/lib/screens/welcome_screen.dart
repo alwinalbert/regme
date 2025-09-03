@@ -1,4 +1,7 @@
+import 'package:app/screens/signin_screen.dart';
+import 'package:app/screens/signup_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
+import 'package:app/widgets/welcome_button.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -10,6 +13,7 @@ class WelcomeScreen extends StatelessWidget {
       child: Column(
         children: [
           Flexible(
+            flex:8,
             child: Container(
               padding: EdgeInsets.symmetric(
                 vertical: 0,
@@ -29,7 +33,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                       TextSpan(
-                        text: 'Welcome to Hall Booking enter your details',
+                        text: 'Welcome to Hall Booking MEC enter your details',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -42,6 +46,31 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
           ),
+          const Flexible(
+            flex:1,
+                child:Align(
+                  alignment: Alignment.bottomRight,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: WelcomeButton(
+                          buttonText: 'LogIn',
+                          textColor:Colors.white,
+                          onTap:SigninScreen(),
+                          color:Colors.transparent,
+                        ),
+                      ),
+                      Expanded(
+                        child: WelcomeButton(
+                          buttonText:'SignUp',
+                          onTap: SignupScreen(),
+                          color:Colors.white,
+                          textColor:Colors.black,
+                        ),
+                      ),
+                  ],),
+                )
+              ),
         ],
       ),
     );
