@@ -111,6 +111,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
                 const SizedBox(height:30),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children:[
                     Checkbox(
@@ -122,6 +123,14 @@ class _SigninScreenState extends State<SigninScreen> {
                       },
                       activeColor: Colors.black,
                     ),
+                    const Text(
+                      'show password',
+                      style:TextStyle(
+                        color:Colors.black54,
+                        fontWeight:FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
                     const Text(
                       'Forgot password?',
                       style:TextStyle(
