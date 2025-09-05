@@ -3,12 +3,11 @@ class Hall {
   final String name;
   //final String location;
   final bool isBooked;
-  //final String imageUrl;
+  final String? imageUrl;
 Hall({
   required this.id,
   required this.name,
-  //required this.location,
   this.isBooked = false,
-  //this.imageUrl,   
+  this.imageUrl,   
 });
 }
