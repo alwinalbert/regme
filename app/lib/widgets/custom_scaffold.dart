@@ -1,31 +1,40 @@
 import 'package:flutter/material.dart';
 
 class CustomScaffold extends StatelessWidget {
-  const CustomScaffold({super.key,this.child});
-  final Widget?child;
+  final Widget child;
+  final Widget? floatingActionButton;
+
+  const CustomScaffold({
+    Key? key,
+    required this.child,
+    this.floatingActionButton,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(
-          //color: Colors.white, //change your color here
+          // color: Colors.white, // Customize if needed
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-            extendBodyBehindAppBar: true,   
-            body: Stack(
-        children:[
-          Image.asset('assets/images/bg.jpeg',
-          fit : BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          Image.asset(
+            'assets/images/bg.jpeg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
           ),
           SafeArea(
-            child:child!,
-            ), 
+            child: child,
+          ),
         ],
       ),
+      floatingActionButton: floatingActionButton,
     );
   }
 }

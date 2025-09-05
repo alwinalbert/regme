@@ -1,4 +1,4 @@
-import 'package:app/models/Hall.dart';
+import 'package:app/models/hall.dart';
 import 'package:flutter/material.dart';
 
 class HallCard extends StatelessWidget {
