@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   icons_plus: ^4.0.0
   syncfusion_flutter_calendar: ^30.2.7
+  url_launcher: ^6.1.10
 
 dev_dependencies:
   flutter_test:

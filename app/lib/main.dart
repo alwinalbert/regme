@@ -1,5 +1,5 @@
-import 'package:app/screens/home_page.dart';
-//import 'package:app/screens/welcome_screen.dart';
+//import 'package:app/screens/home_page.dart';
+import 'package:app/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -33,8 +33,8 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      //home: const WelcomeScreen()
-      home:HomePage()
+      home: const WelcomeScreen()
+      //home:HomePage()
     );
   }
 }

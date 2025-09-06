@@ -2,6 +2,7 @@ import 'package:app/screens/signup_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -11,6 +12,14 @@ class SigninScreen extends StatefulWidget {
 }
 
 class _SigninScreenState extends State<SigninScreen> {
+  Future<void> _launchURL(String url) async {
+  final Uri uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    throw 'Could not launch $url';
+  }
+}
   final _formSignInKey = GlobalKey<FormState>();
   bool remeberPassword = true;
   @override
@@ -205,11 +214,47 @@ class _SigninScreenState extends State<SigninScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children:[
-                    Logo(Logos.google),
-                    Logo(Logos.twitter),
-                    Logo(Logos.facebook_f),
-                    Logo(Logos.apple),
-                  ],
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await _launchURL('https://accounts.google.com/signin');
+                        } catch (e) {
+                          debugPrint('Failed to launch URL: $e');
+                        }
+                      },
+                      child: Logo(Logos.google, size: 40),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await _launchURL('https://www.facebook.com/login.php');
+                        } catch (e) {
+                          debugPrint('Failed to launch URL: $e');
+                        }
+                      },
+                      child: Logo(Logos.facebook_f, size: 40),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await _launchURL('https://www.apple.com/id/login');
+                        } catch (e) {
+                          debugPrint('Failed to launch URL: $e');
+                        }
+                      },
+                      child: Logo(Logos.apple, size: 40),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await _launchURL('https://twitter.com/login');
+                        } catch (e) {
+                          debugPrint('Failed to launch URL: $e');
+                        }
+                      },
+                      child: Logo(Logos.twitter, size: 40),
+                    ),
+                    ],
                 ),
                 const SizedBox(height:20),
                 Row(
