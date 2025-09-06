@@ -12,13 +12,14 @@ class SignUpScreen extends StatefulWidget {
 }
 class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _launchURL(String url) async {
-  final Uri uri = Uri.parse(url);
+  final uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   } else {
     throw 'Could not launch $url';
   }
 }
+
   final _formSignupKey = GlobalKey<FormState>();
   bool agreePersonalData = true;
   @override
