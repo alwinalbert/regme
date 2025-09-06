@@ -2,6 +2,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../models/booking.dart';
 import 'package:flutter/material.dart';
 
+
 class BookingDataSource extends CalendarDataSource {
   BookingDataSource(List<Booking> source) {
     appointments = source;

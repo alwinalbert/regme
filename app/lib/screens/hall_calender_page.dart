@@ -1,9 +1,8 @@
+import 'package:app/screens/booking_form_page.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../models/hall.dart';
 import '../models/booking.dart';
-
-// Modular components imports
 import '../components/booking_data_source.dart';
 import '../components/appointment_builder.dart';
 import '../components/calendar_tap_handler.dart';
@@ -17,7 +16,7 @@ class HallCalenderPage extends StatefulWidget {
 }
 
 class _HallCalenderPageState extends State<HallCalenderPage> {
-  // Replace with real backend data fetching
+  // Replace with backend data 
   List<Booking> bookings = [
     Booking(
       id: '1',
@@ -48,8 +47,21 @@ class _HallCalenderPageState extends State<HallCalenderPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navigate to booking form page
+        onPressed: () async {
+          final newBooking = await Navigator.push<Booking>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingFormPage(hall: widget.hall),
+            ),
+          );
+          if (newBooking != null) {
+            setState(() {
+              bookings.add(newBooking);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Booking for "${newBooking.title}" submitted!')),
+            );
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Book Hall'),
