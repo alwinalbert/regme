@@ -4,11 +4,10 @@ class CustomScaffold extends StatelessWidget {
   final Widget child;
   final Widget? floatingActionButton;
 
-  const CustomScaffold({
-    Key? key,
-    required this.child,
-    this.floatingActionButton,
-  }) : super(key: key);
+  const CustomScaffold({super.key,
+  required this.child,
+  this.floatingActionButton,
+  });
 
   @override
   Widget build(BuildContext context) {
