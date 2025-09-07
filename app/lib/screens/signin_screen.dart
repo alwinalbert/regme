@@ -1,3 +1,4 @@
+import 'package:app/screens/forgot_password.dart';
 import 'package:app/screens/signup_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _SigninScreenState extends State<SigninScreen> {
 }
   final _formSignInKey = GlobalKey<FormState>();
   bool remeberPassword = true;
+  bool _obscureText = true;
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
@@ -89,7 +91,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
                 const SizedBox(height:20),
                 TextFormField(
-                  obscureText: true,
+                  obscureText: _obscureText,
                   obscuringCharacter: '*',
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -115,7 +117,18 @@ class _SigninScreenState extends State<SigninScreen> {
                         color:Colors.black12,
                       ),
                       borderRadius: BorderRadius.circular(10),
-                    ), 
+                    ),
+                    suffixIcon:IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility:Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        },
+                        );
+                      },
+                      ), 
                   ),
                 ),
                 const SizedBox(height:30),
@@ -133,18 +146,26 @@ class _SigninScreenState extends State<SigninScreen> {
                       activeColor: Colors.black,
                     ),
                     const Text(
-                      'show password',
+                      'Remember password',
                       style:TextStyle(
                         color:Colors.black54,
                         fontWeight:FontWeight.bold,
                       ),
                     ),
                     const Spacer(),
-                    const Text(
-                      'Forgot password?',
-                      style:TextStyle(
-                        color:Colors.black,
-                        fontWeight:FontWeight.bold,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgetPassword()),
+                        );
+                      },
+                      child: const Text(
+                        'Forgot password?',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
