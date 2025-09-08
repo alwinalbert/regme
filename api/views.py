@@ -6,6 +6,8 @@ from .serializers import HallSerializer, BookingSerializer
 from rest_framework import generics
 from django.contrib.auth import get_user_model
 from .serializers import UserRegisterSerializer
+from .serializers import BookingCalendarSerializer
+
 
 User = get_user_model()
 
@@ -51,3 +53,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.status = 'rejected'
         booking.save()
         return Response({'status': booking.status})
+    
+    @action(detail=False, methods=["get"])
+    def calendar(self, request):
+        bookings = self.get_queryset()
+        serializer = BookingCalendarSerializer(bookings, many=True)
+        return Response(serializer.data)
