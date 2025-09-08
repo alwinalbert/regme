@@ -38,3 +38,29 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['id', 'hall', 'requested_by', 'date', 'time_slot', 'status']
+
+
+class BookingCalendarSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(source="hall.name", read_only=True)
+    start = serializers.SerializerMethodField()
+    end = serializers.SerializerMethodField()
+    color = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booking
+        fields = ["id", "title", "start", "end", "status", "color"]
+
+    def get_start(self, obj):
+        return f"{obj.date}T{obj.time_slot.split('-')[0]}:00"  # e.g. "2025-09-05T10:00:00"
+
+    def get_end(self, obj):
+        return f"{obj.date}T{obj.time_slot.split('-')[1]}:00"  # e.g. "2025-09-05T12:00:00"
+
+    def get_color(self, obj):
+        return {
+            "pending": "yellow",
+            "hall_approved": "blue",
+            "principal_approved": "green",
+            "rejected": "red",
+        }.get(obj.status, "gray")
+       
