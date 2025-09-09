@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from .models import User, Hall, Booking
 from rest_framework import serializers
@@ -38,7 +37,6 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['id', 'hall', 'requested_by', 'date', 'time_slot', 'status']
-
 
 class BookingCalendarSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="hall.name", read_only=True)

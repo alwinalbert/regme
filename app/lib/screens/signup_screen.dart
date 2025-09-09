@@ -3,6 +3,8 @@ import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -11,6 +13,15 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 class _SignUpScreenState extends State<SignUpScreen> {
+  final _formSignupKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool agreePersonalData = true;
+  bool _obscureText = true;
+  bool _isLoading = false;
+  
+  String _selectedRole = 'club';
   Future<void> _launchURL(String url) async {
   final uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
@@ -19,9 +30,63 @@ class _SignUpScreenState extends State<SignUpScreen> {
     throw 'Could not launch $url';
   }
 }
+   Future<void> _signUp() async {
+    if (!_formSignupKey.currentState!.validate()) return;
+    if (!agreePersonalData) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please agree to the processing of personal data')),
+      );
+      return;
+    }
 
-  final _formSignupKey = GlobalKey<FormState>();
-  bool agreePersonalData = true;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8000/api/register/'), // Changed from 127.0.0.1
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'username': _fullNameController.text,
+        'email': _emailController.text,
+        'password': _passwordController.text,
+        'role': _selectedRole,
+      }),
+    );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+        // Navigate to signin screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SigninScreen()),
+        );
+      } else {
+        final errorData = json.decode(response.body);
+        String errorMessage = 'Registration failed';
+        if (errorData.containsKey('email')) {
+          errorMessage = 'Email already exists';
+        } else if (errorData.containsKey('username')) {
+          errorMessage = 'Username already exists';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
@@ -65,6 +130,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       // full name
                       TextFormField(
+                        controller: _fullNameController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter Full name';
@@ -97,9 +163,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       // email
                       TextFormField(
+                        controller: _emailController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter Email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -129,11 +199,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       // password
                       TextFormField(
-                        obscureText: true,
+                        controller: _passwordController,
+                        obscureText: _obscureText,
                         obscuringCharacter: '*',
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter Password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
                           }
                           return null;
                         },
@@ -156,10 +230,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureText = !_obscureText;
+                              });
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(
                         height: 25.0,
+                      ),
+                       DropdownButtonFormField<String>(
+                        value: _selectedRole,
+                        decoration: InputDecoration(
+                          label: const Text('Role'),
+                          prefixIcon: const Icon(Icons.work),
+                          border: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'club', child: Text('Club')),
+                          DropdownMenuItem(value: 'faculty', child: Text('Faculty')),
+                          DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                          DropdownMenuItem(value: 'hall_incharge', child: Text('Hall Incharge')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedRole = value!;
+                          });
+                        },
                       ),
                       // i agree to the processing
                       Row(
@@ -195,23 +305,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formSignupKey.currentState!.validate() &&
-                                agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Processing Data'),
-                                ),
-                              );
-                            } else if (!agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Please agree to the processing of personal data')),
-                              );
-                            }
-                          },
-                          child: const Text('Sign up'),
+                          onPressed: _isLoading ? null : _signUp, // Change this line
+                          child: _isLoading
+                              ? const CircularProgressIndicator()
+                              : const Text('Sign up'),
                         ),
                       ),
                       const SizedBox(
@@ -341,4 +438,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
+@override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 }
+

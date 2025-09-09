@@ -1,61 +1,51 @@
-from rest_framework import viewsets, permissions
+from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from .models import Hall, Booking
-from .serializers import HallSerializer, BookingSerializer
-from rest_framework import generics
-from django.contrib.auth import get_user_model
-from .serializers import UserRegisterSerializer
-from .serializers import BookingCalendarSerializer
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import UserRegisterSerializer, UserSerializer
+from .models import User
 
-
-User = get_user_model()
-
-class UserRegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserRegisterSerializer
-    # Anyone can register (you can lock this down later if needed)
-    permission_classes = []
-
-class HallViewSet(viewsets.ModelViewSet):
-    queryset = Hall.objects.all()
-    serializer_class = HallSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        # Automatically set requesting user
-        serializer.save(requested_by=self.request.user)
-
-    @action(detail=True, methods=['post'])
-    def approve_hall(self, request, pk=None):
-        booking = self.get_object()
-        if request.user.role == 'hall_incharge':
-            booking.status = 'hall_approved'
-            booking.save()
-        return Response({'status': booking.status})
-
-    @action(detail=True, methods=['post'])
-    def approve_principal(self, request, pk=None):
-        booking = self.get_object()
-        if request.user.role == 'principal':
-            booking.status = 'principal_approved'
-            booking.save()
-        return Response({'status': booking.status})
-
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        booking = self.get_object()
-        booking.status = 'rejected'
-        booking.save()
-        return Response({'status': booking.status})
+@api_view(['POST'])
+def register_view(request):
+    print("=== REGISTER VIEW CALLED ===")
+    print(f"Request method: {request.method}")
+    print(f"Request data: {request.data}")
+    print(f"Content type: {request.content_type}")
     
-    @action(detail=False, methods=["get"])
-    def calendar(self, request):
-        bookings = self.get_queryset()
-        serializer = BookingCalendarSerializer(bookings, many=True)
-        return Response(serializer.data)
+    serializer = UserRegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        print("Serializer is valid, creating user...")
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        response_data = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data
+        }
+        print(f"Returning success response: {response_data}")
+        return Response(response_data, status=status.HTTP_201_CREATED)
+    
+    print(f"Serializer errors: {serializer.errors}")
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def login_view(request):
+    print("=== LOGIN VIEW CALLED ===")
+    email = request.data.get('email')
+    password = request.data.get('password')
+    print(f"Login attempt for email: {email}")
+    
+    try:
+        user = User.objects.get(email=email)
+        if user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            })
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
