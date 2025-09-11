@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:app/screens/forgot_password.dart';
+import 'package:app/screens/home_page.dart';
 import 'package:app/screens/signup_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,6 +16,42 @@ class SigninScreen extends StatefulWidget {
 }
 
 class _SigninScreenState extends State<SigninScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  Future<void> _login() async {
+    if (!_formSignInKey.currentState!.validate()) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/login/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
+        // Redirect to homepage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid credentials')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
   Future<void> _launchURL(String url) async {
   final uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
@@ -62,6 +101,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
                 const SizedBox(height:20),
                 TextFormField(
+                  controller: _emailController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -91,6 +131,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
                 const SizedBox(height:20),
                 TextFormField(
+                  controller: _passwordController,
                   obscureText: _obscureText,
                   obscuringCharacter: '*',
                   validator: (value) {
@@ -133,72 +174,64 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
                 const SizedBox(height:30),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children:[
-                    Checkbox(
-                      value: remeberPassword,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          remeberPassword = value!;
-                        });
-                      },
-                      activeColor: Colors.black,
-                    ),
-                    const Text(
-                      'Remember password',
-                      style:TextStyle(
-                        color:Colors.black54,
-                        fontWeight:FontWeight.bold,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Checkbox(
+                        value: remeberPassword,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            remeberPassword = value!;
+                          });
+                        },
+                        activeColor: Colors.black,
                       ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(context,
-                          MaterialPageRoute(
-                            builder: (context) => const ForgetPassword()),
-                        );
-                      },
-                      child: const Text(
-                        'Forgot password?',
+                      const Text(
+                        'Remember password',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Colors.black54,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height:30),
-                SizedBox(
-                  width:double.infinity,
-                  child:ElevatedButton(
-                    onPressed: () {
-                      if (_formSignInKey.currentState!.validate() &&
-                       remeberPassword) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Processing Data')),
-                        );
-                       }
-                        else if(!remeberPassword){
-                          ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please agree to remember password')),
-                        );
-                        }
-                    },
-                     child: const Text(
-                      'Log In',
-                      style:TextStyle(
-                        fontSize:18,
-                        fontWeight:FontWeight.bold,
-                        color:Colors.black,
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgetPassword(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                     ),
+                    ],
                   ),
-                ),
+
+                  const SizedBox(height: 30),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _login, // <-- Only this login button
+                      child: const Text(
+                        'Log In',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height:30),
+                
                 const SizedBox(height:40),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
