@@ -38,9 +38,15 @@ class _SigninScreenState extends State<SigninScreen> {
         );
         // Redirect to homepage
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(
+            username: data['user']['username'] ?? '',
+            email: data['user']['email'] ?? '',
+            role: data['user']['role'] ?? '',
+          ),
+        ),
+      );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid credentials')),

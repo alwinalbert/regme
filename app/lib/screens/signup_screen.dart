@@ -1,3 +1,4 @@
+import 'package:app/screens/home_page.dart';
 import 'package:app/screens/signin_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -62,9 +63,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
         // Navigate to signin screen
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SigninScreen()),
-        );
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(
+            username: data['user']['username'] ?? '',
+            email: data['user']['email'] ?? '',
+            role: data['user']['role'] ?? '',
+          ),
+        ),
+      );
       } else {
         final errorData = json.decode(response.body);
         String errorMessage = 'Registration failed';
@@ -261,7 +268,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         items: const [
                           DropdownMenuItem(value: 'club', child: Text('Club')),
-                          DropdownMenuItem(value: 'faculty', child: Text('Faculty')),
+                          DropdownMenuItem(value: 'principal', child: Text('Principal')),
                           DropdownMenuItem(value: 'admin', child: Text('Admin')),
                           DropdownMenuItem(value: 'hall_incharge', child: Text('Hall Incharge')),
                         ],

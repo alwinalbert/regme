@@ -6,7 +6,7 @@ class User(AbstractUser):
     ('club', 'Club'),
     ('admin','Admin'),
     ('hall_incharge','Hall in Charge'),
-    ('Principal' , 'Principal'),
+    ('principal' , 'Principal'),
   ]
   email = models.EmailField(unique=True)
   role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
@@ -16,7 +16,7 @@ class User(AbstractUser):
 
 class Hall(models.Model):
   name = models.CharField(max_length=100)
-  capacity = models.IntegerField()
+  capacity = models.IntegerField(default = 50)
   description = models.TextField(blank=True)
   
   def __str__(self):
