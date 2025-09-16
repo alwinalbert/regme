@@ -34,10 +34,25 @@ class HallSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     requested_by = UserSerializer(read_only=True)
     hall = HallSerializer(read_only=True)
+    hall_name=serializers.CharField(source="hall.name",read_only=True)
+    requested_by_username = serializers.CharField(source="requested_by.username", read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'hall', 'requested_by', 'date', 'time_slot', 'status']
+        fields = [
+            "id", "hall", "hall_name",
+            "requested_by", "requested_by_username",
+            "event_name", "event_description",
+            "date", "time_slot",
+            "request_type", "status", "staff_remark","created_at"
+        ]
+        read_only_fields = ["requested_by", "status"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        validated_data["requested_by"] = user
+        return super().create(validated_data)
+        
 
 
 class BookingCalendarSerializer(serializers.ModelSerializer):
@@ -63,4 +78,29 @@ class BookingCalendarSerializer(serializers.ModelSerializer):
             "principal_approved": "green",
             "rejected": "red",
         }.get(obj.status, "gray")
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("No account with this email.")
+        return value
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    new_password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Invalid email.")
+        return value
+
+    def save(self):
+        email = self.validated_data["email"]
+        new_password = self.validated_data["new_password"]
+        user = User.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+        return user
        
