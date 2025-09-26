@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import BookingSerializer, HallSerializer, UserRegisterSerializer, UserSerializer
+from .serializers import BookingSerializer, ForgotPasswordSerializer, HallSerializer, ResetPasswordSerializer, UserRegisterSerializer, UserSerializer, BookingListSerializer
 from .models import Hall, User,Booking
 from rest_framework import viewsets, permissions
 
@@ -58,13 +58,31 @@ class HallViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Booking.objects.all().order_by('-created_at')
+        
+        # Filter by hall_id if provided
+        hall_id = self.request.query_params.get('hall_id', None)
+        if hall_id is not None:
+            queryset = queryset.filter(hall_id=hall_id)
+        
+        # Filter by user role
+        if user.role in ['principal', 'admin']:
+            return queryset
+        else:
+            return queryset.filter(requested_by=user)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BookingListSerializer
+        return BookingSerializer
 
     def perform_create(self, serializer):
-        request_type=self.request.data.get("request_type","permissions")
+        request_type = self.request.data.get("request_type", "permissions")
         status_value = "reserved" if request_type == "reserve" else "pending"
         serializer.save(requested_by=self.request.user, request_type=request_type, status=status_value)
 
@@ -81,7 +99,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking = self.get_object()
         remark = request.data.get("staff_remark", "")
         booking.staff_remark = remark
-        # Keep status as pending but attach suggestion
         booking.save()
         return Response({"status": "pending_with_suggestion", "remark": remark})
 
@@ -100,11 +117,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.save()
         return Response({'status': booking.status})
     
-    @action(detail=False, methods=["get"])
-    def calendar(self, request):
-        bookings = self.get_queryset()
-        serializer = BookingCalendarSerializer(bookings, many=True)
-        return Response(serializer.data)
 class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)

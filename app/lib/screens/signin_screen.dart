@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -18,6 +19,7 @@ class SigninScreen extends StatefulWidget {
 class _SigninScreenState extends State<SigninScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  
   Future<void> _login() async {
     if (!_formSignInKey.currentState!.validate()) return;
 
@@ -33,6 +35,12 @@ class _SigninScreenState extends State<SigninScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        
+        // Store the JWT token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('access_token', data['access']);
+        await prefs.setString('refresh_token', data['refresh']);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
@@ -66,6 +74,7 @@ class _SigninScreenState extends State<SigninScreen> {
     throw 'Could not launch $url';
   }
 }
+
   final _formSignInKey = GlobalKey<FormState>();
   bool remeberPassword = true;
   bool _obscureText = true;

@@ -32,22 +32,32 @@ class HallSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     requested_by = UserSerializer(read_only=True)
-    hall = HallSerializer(read_only=True)
     hall_name=serializers.CharField(source="hall.name",read_only=True)
     requested_by_username = serializers.CharField(source="requested_by.username", read_only=True)
+    
+    # Add a writable hall_id field
+    hall_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Booking
         fields = [
-            "id", "hall", "hall_name",
+            "id", "hall_id", "hall_name",
             "requested_by", "requested_by_username",
             "event_name", "event_description",
             "date", "time_slot",
             "request_type", "status", "staff_remark","created_at"
         ]
-        read_only_fields = ["requested_by", "status"]
+        read_only_fields = ["requested_by", "status", "hall_name", "requested_by_username"]
 
     def create(self, validated_data):
+        # Extract hall_id and set the hall object
+        hall_id = validated_data.pop('hall_id')
+        try:
+            hall = Hall.objects.get(id=hall_id)
+            validated_data['hall'] = hall
+        except Hall.DoesNotExist:
+            raise serializers.ValidationError("Hall does not exist")
+        
         user = self.context["request"].user
         validated_data["requested_by"] = user
         return super().create(validated_data)
@@ -100,4 +110,13 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
         return user
-       
+    
+class BookingListSerializer(serializers.ModelSerializer):
+    hall_name = serializers.CharField(source='hall.name', read_only=True)
+    requested_by_name = serializers.CharField(source='requested_by.username', read_only=True)
+    
+    class Meta:
+        model = Booking
+        fields = ['id', 'hall_name', 'requested_by_name', 'event_name', 
+                  'event_description', 'date', 'time_slot', 'request_type', 
+                  'status', 'created_at']       

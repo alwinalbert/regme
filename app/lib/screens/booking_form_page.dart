@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/hall.dart';
-import '../models/booking.dart';
 import '../components/booking_date_time_picker.dart';
 import '../components/booking_purpose_field.dart';
 import '../components/booking_form_validator.dart';
 import '../components/booking_feedback_dialog.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class BookingFormPage extends StatefulWidget {
   final Hall hall;
@@ -51,44 +53,86 @@ class _BookingFormPageState extends State<BookingFormPage> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() != true) return;
+void _submit() async {
+  if (_formKey.currentState?.validate() != true) return;
 
-    var timeOrderError = BookingFormValidator.validateTimeOrder(_startDateTime, _endDateTime);
-    if (_startDateTime == null || _endDateTime == null) {
+  var timeOrderError = BookingFormValidator.validateTimeOrder(_startDateTime, _endDateTime);
+  if (_startDateTime == null || _endDateTime == null) {
+    showDialog(
+      context: context,
+      builder: (_) => const BookingFeedbackDialog(
+        title: 'Booking Error',
+        message: 'Please select start and end times',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      ),
+    );
+    return;
+  }
+  if (timeOrderError != null) {
+    showDialog(
+      context: context,
+      builder: (_) => BookingFeedbackDialog(
+        title: 'Booking Error',
+        message: timeOrderError,
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  // Send booking to backend
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    
+    // Format time slot (e.g., "10:00-12:00")
+    final startTime = "${_startDateTime!.hour.toString().padLeft(2, '0')}:${_startDateTime!.minute.toString().padLeft(2, '0')}";
+    final endTime = "${_endDateTime!.hour.toString().padLeft(2, '0')}:${_endDateTime!.minute.toString().padLeft(2, '0')}";
+    final timeSlot = "$startTime-$endTime";
+    
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8000/api/bookings/'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'hall_id': int.parse(widget.hall.id),
+        'event_name': _purposeController.text.trim(),
+        'event_description': _purposeController.text.trim(),
+        'date': '${_startDateTime!.year}-${_startDateTime!.month.toString().padLeft(2, '0')}-${_startDateTime!.day.toString().padLeft(2, '0')}',
+        'time_slot': timeSlot,
+        'request_type': 'permissions',
+      }),
+    );
+
+    if (response.statusCode == 201) {
       showDialog(
         context: context,
         builder: (_) => const BookingFeedbackDialog(
-          title: 'Booking Error',
-          message: 'Please select start and end times',
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
+          title: 'Booking Successful',
+          message: 'Your booking request has been submitted for approval',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
         ),
-      );
-      return;
+      ).then((_) => Navigator.pop(context));
+    } else {
+      throw Exception('Failed to create booking');
     }
-    if (timeOrderError != null) {
-      showDialog(
-        context: context,
-        builder: (_) => BookingFeedbackDialog(
-          title: 'Booking Error',
-          message: timeOrderError,
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    final newBooking = Booking(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      startTime: _startDateTime!,
-      endTime: _endDateTime!,
-      title: _purposeController.text.trim(),
-      status: 'pending',
+  } catch (e) {
+    showDialog(
+      context: context,
+      builder: (_) => BookingFeedbackDialog(
+        title: 'Booking Error',
+        message: 'Failed to submit booking: $e',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      ),
     );
-    Navigator.pop(context, newBooking);
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

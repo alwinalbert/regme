@@ -6,6 +6,9 @@ import '../models/booking.dart';
 import '../components/booking_data_source.dart';
 import '../components/appointment_builder.dart';
 import '../components/calendar_tap_handler.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HallCalenderPage extends StatefulWidget {
   final Hall hall;
@@ -17,23 +20,68 @@ class HallCalenderPage extends StatefulWidget {
 
 class _HallCalenderPageState extends State<HallCalenderPage> {
   // Replace with backend data 
-  List<Booking> bookings = [
-    Booking(
-      id: '1',
-      startTime: DateTime.now().add(const Duration(hours: 1)),
-      endTime: DateTime.now().add(const Duration(hours: 2)),
-      title: 'Workshop',
-      status: 'approved',
-    ),
-    Booking(
-      id: '2',
-      startTime: DateTime.now().add(const Duration(hours: 3)),
-      endTime: DateTime.now().add(const Duration(hours: 4)),
-      title: 'Seminar',
-      status: 'pending',
-    ),
-  ];
+ List<Booking> bookings = [];
+  bool isLoading = true;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchBookings();
+  }
+
+  Future<void> fetchBookings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8000/api/bookings/?hall_id=${widget.hall.id}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        bookings = data.map((bookingJson) {
+          // Parse date and time_slot to create DateTime objects
+          final date = bookingJson['date'] as String; // e.g., "2025-09-30"
+          final timeSlot = bookingJson['time_slot'] as String; // e.g., "10:00-15:00"
+          
+          // Split the time slot
+          final times = timeSlot.split('-');
+          final startTimeStr = times[0]; // "10:00"
+          final endTimeStr = times.length > 1 ? times[1] : startTimeStr; // "15:00"
+          
+          // Create DateTime objects
+          final startTime = DateTime.parse('${date}T${startTimeStr}:00');
+          final endTime = DateTime.parse('${date}T${endTimeStr}:00');
+          
+          return Booking(
+            id: bookingJson['id'].toString(),
+            startTime: startTime,
+            endTime: endTime,
+            title: bookingJson['event_name'] ?? 'No Title',
+            status: bookingJson['status'] ?? 'pending',
+          );
+        }).toList();
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      print('Error fetching bookings: ${response.statusCode} - ${response.body}');
+    }
+  } catch (e) {
+    setState(() {
+      isLoading = false;
+    });
+    print('Exception while fetching bookings: $e');
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +116,9 @@ class _HallCalenderPageState extends State<HallCalenderPage> {
         backgroundColor: Colors.deepPurpleAccent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      body: Stack(
+      body: isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : Stack(
         children: [
           Image.asset(
             'assets/images/bg.jpeg',
