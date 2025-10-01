@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from .models import User, Hall, Booking
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
+from .models import User, Hall, Booking, PasswordResetToken
 User = get_user_model()
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -85,32 +83,45 @@ class BookingCalendarSerializer(serializers.ModelSerializer):
             "principal_approved": "green",
             "rejected": "red",
         }.get(obj.status, "gray")
+
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, value):
         if not User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("No account with this email.")
-        return value
-
-
+            raise serializers.ValidationError("No account with this email address exists.")
+        return value    
+    
 class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    token = serializers.UUIDField()
     new_password = serializers.CharField(write_only=True, min_length=6)
 
-    def validate_email(self, value):
-        if not User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Invalid email.")
-        return value
+    def validate_token(self, value):
+        try:
+            reset_token = PasswordResetToken.objects.get(token=value)
+            if reset_token.is_used:
+                raise serializers.ValidationError("This reset token has already been used.")
+            if reset_token.is_expired():
+                raise serializers.ValidationError("This reset token has expired.")
+            return value
+        except PasswordResetToken.DoesNotExist:
+            raise serializers.ValidationError("Invalid reset token.")
 
     def save(self):
-        email = self.validated_data["email"]
+        token = self.validated_data["token"]
         new_password = self.validated_data["new_password"]
-        user = User.objects.get(email=email)
+        
+        reset_token = PasswordResetToken.objects.get(token=token)
+        user = reset_token.user
         user.set_password(new_password)
         user.save()
+        
+        # Mark token as used
+        reset_token.is_used = True
+        reset_token.save()
+        
         return user
-    
+        
 class BookingListSerializer(serializers.ModelSerializer):
     hall_name = serializers.CharField(source='hall.name', read_only=True)
     requested_by_name = serializers.CharField(source='requested_by.username', read_only=True)
@@ -119,4 +130,4 @@ class BookingListSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['id', 'hall_name', 'requested_by_name', 'event_name', 
                   'event_description', 'date', 'time_slot', 'request_type', 
-                  'status', 'created_at']       
+                  'status', 'created_at']        

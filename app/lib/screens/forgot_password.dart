@@ -1,5 +1,9 @@
+import 'package:app/screens/reset_password_screen.dart';
 import 'package:app/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 
 class ForgetPassword extends StatefulWidget {
   const ForgetPassword({super.key});
@@ -18,13 +22,57 @@ class __ForgetPasswordState extends State<ForgetPassword> {
     _emailController.dispose();
     super.dispose();
   }
-  void _submit() {
-   if(_formKey.currentState!.validate()) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('password reset link has been sent to your registerd email Id'))
-    );
+void _submit() async {
+  if(_formKey.currentState!.validate()) {
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/forgot-password/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': _emailController.text.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print('DEBUG: Received data: $data'); 
+          print('DEBUG: Token: ${data['token']}');
+          ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Password reset link sent to your email'))
+  );
+        
+        // For testing, navigate to reset screen with token
+        // In production, users would click the email link
+        if (data['token'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ResetPasswordScreen(
+                email: _emailController.text.trim(),
+                token: data['token'],
+              ),
+            ),
+          );
+        } else {
+          Navigator.pop(context); // Go back to login
+        }
+      } else {
+        final errorData = json.decode(response.body);
+        String errorMessage = 'Failed to send reset link';
+        if (errorData['email'] != null) {
+          errorMessage = errorData['email'][0];
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red)
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red)
+      );
+    }
   }
-  }
+}
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
