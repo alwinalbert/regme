@@ -50,6 +50,7 @@ class Booking(models.Model):
   staff_remark=models.TextField(blank=True,null=False)#To give suggestions
   Princi_remark=models.TextField(blank=True,null=False)
   dean_remark=models.TextField(blank=True,null=False)
+  guest_details = models.TextField(blank=True, null=True)
 
 
   def __str__(self):
