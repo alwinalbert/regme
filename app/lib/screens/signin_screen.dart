@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:app/screens/clubdashboard.dart';
+
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -44,17 +46,31 @@ class _SigninScreenState extends State<SigninScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
-        // Redirect to homepage
-        Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(
-            username: data['user']['username'] ?? '',
-            email: data['user']['email'] ?? '',
-            role: data['user']['role'] ?? '',
-          ),
-        ),
-      );
+        final String role = data['user']['role'] ?? '';
+        
+        if (role == 'club') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ClubDashboard(
+                username: data['user']['username'] ?? '',
+                email: data['user']['email'] ?? '',
+                role: role,
+              ),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomePage(
+                username: data['user']['username'] ?? '',
+                email: data['user']['email'] ?? '',
+                role: role,
+              ),
+            ),
+          );
+        };
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid credentials')),
